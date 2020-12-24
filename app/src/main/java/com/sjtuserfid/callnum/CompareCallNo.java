@@ -7,6 +7,9 @@ public class CompareCallNo {
     private static ConfigureRule sortrule=new ConfigureRule();
 
     private static String errorinfo="";
+    private static String resultinfo="";
+
+
 
     //比较两个索书号，-1小于，1大于
     //通过输入两个索书号进行初始化并比较
@@ -17,44 +20,68 @@ public class CompareCallNo {
 
     //直接使用初始化过的CallNumA,CallNumB进行比较
     public static int Compare(){
-
+        errorinfo="";
+        resultinfo="";
         //初始化索书号
         if (! inited){
-            System.out.println("未初始化，请使用initCallNum初始化或调用Compare(String A,String B)");
+            System.out.println("未初始化，请使用initCallNum初始化或直接调用Compare(String A,String B)");
             return 0;
         }
 
         //比较索书号主流程部分
+        //先比较语言
+        String languageA=CallNumA.language;
+        String languageB=CallNumB.language;
+        //语言不同
+        if(!languageA.equals(languageB)){
+            int languageorder=-1;
+            if(sortrule.getlanguageOrder(languageA)<=sortrule.getlanguageOrder(languageB)){
+                languageorder=-1;
+            }
+            else{
+                languageorder=1;
+            }
+            resultinfo+="不同语言书次号";
+            return languageorder;
+        }
+
+
         //比较分类号
         int classorder=compareClassN();
-        if (classorder==-1){
+        if (classorder<=-1){
             return -1;
         }
-        else if (classorder==1){
+        else if (classorder>=1){
             return 1;
         }
 
         //比较分类号出现错误
         if (!errorinfo.equals("")){
             System.out.println(errorinfo);
-            return -1;
+            return 0;
         }
         else{
             //debug info
-            System.out.println("equal class number");
+            //System.out.println("equal class number");
         }
 
         //若类号相等比较书次号
         int bookorder=compareBookN();
-        if (bookorder<=0){
+        if (bookorder<0){
             return -1;
         }
         else if (bookorder>0){
             return 1;
         }
 
+        int extraorder=compareExtraN();
+        if (extraorder<=0){
+            return -1;
+        }
+        else{
+            return 1;
+        }
 
-        return 0;
     }
 
         //初始化索书号数据结构，初步解析索书号字符串
@@ -67,10 +94,10 @@ public class CompareCallNo {
 
     //比较类号，相等返回0，A小于B返回-1，A大于B返回1
     private static int compareClassN(){
-        int bigClassA=bigClass(CallNumA);
-        int bigClassB=bigClass(CallNumB);
+        int bigClassA=parseBigClass(CallNumA);
+        int bigClassB=parseBigClass(CallNumB);
         if (bigClassA==-2){
-
+            System.out.println("无法识别的大类号");
         }
         else if (bigClassA<bigClassB){
             return -1;
@@ -86,7 +113,7 @@ public class CompareCallNo {
     }
 
     //解析类号，返回大类号对应顺序号，同时记录小类号
-    private static int bigClass(CallNum callNum){
+    private static int parseBigClass(CallNum callNum){
         String ClassStr=callNum.classNumber;
         int offset;
         int classNum=-1;
@@ -99,7 +126,7 @@ public class CompareCallNo {
             }
             //第一个字非大类号，说明格式有误
             else if(offset==0){
-                System.out.println("illegal class Number:"+ClassStr);
+                //System.out.println("illegal class Number:"+ClassStr);
                 return -2;
             }
             else{
@@ -123,26 +150,34 @@ public class CompareCallNo {
         String languageB=CallNumB.language;
         //语言不同
         if(!languageA.equals(languageB)){
-            errorinfo="不同语言书次号";
-            return 0;
+            int languageorder=-1;
+            if(sortrule.getlanguageOrder(languageA)<=sortrule.getlanguageOrder(languageB)){
+                languageorder=-1;
+            }
+            else{
+                languageorder=1;
+            }
+            //errorinfo=CallNumA.bookNumber+","+CallNumB.bookNumber+"不同语言书次号";
+            return languageorder;
         }
 
         //中文书次号分析，字母（可无）+数字+（-数字）（可无）；另外日文书次号暂时
         if (languageA.equals("chinese") || languageA.equals("japanese")) {
-            System.out.println("比较中文书次号");
+            resultinfo+="比较中文书次号 ";
             //字符串处理
-            categoryBookN(CallNumA);
-            categoryBookN(CallNumB);
+            parseCategoryBookN(CallNumA);
+            parseCategoryBookN(CallNumB);
             //主要书次号比较，
             if (CallNumA.getBookNum_chinese() != CallNumB.getBookNum_chinese()) {
-                System.out.println("主书号不同");
+                resultinfo+="主书号不同";
                 return CallNumA.getBookNum_chinese() <= CallNumB.getBookNum_chinese() ? -1 : 1;
 
             }
 
+
             //主书次号相同比较横杠后副号码
             if (CallNumA.getSubBookNum_chinese()!=CallNumB.getSubBookNum_chinese()){
-                System.out.println("副书号不同");
+                resultinfo+="副书号不同";
                 return CallNumA.getSubBookNum_chinese()<= CallNumB.getSubBookNum_chinese() ? -1:1;
             }
 
@@ -154,19 +189,20 @@ public class CompareCallNo {
         }
         //英文书次号
         else if (languageA.equals("english")){
-            System.out.println("比较英文著者号");
+            resultinfo+="比较英文著者号 ";
             //
-            authorBookN(CallNumA);
-            authorBookN(CallNumB);
+            parseAuthorBookN(CallNumA);
+            parseAuthorBookN(CallNumB);
             //著者号比较
             if (!CallNumA.getAuthor_english().equals(CallNumB.getAuthor_english())){
                 //字符串比较
-                System.out.println("著者号不同");
+                resultinfo+="著者号不同";
                 return CallNumA.getAuthor_english().compareTo(CallNumB.getAuthor_english());
             }
 
             //著者号相同，比较书名缩略字母
             if (!CallNumA.getBookName_english().equals(CallNumB.getBookName_english())){
+                resultinfo+="书名缩略不同";
                 return CallNumA.getBookName_english().compareTo(CallNumB.getBookName_english());
             }
 
@@ -184,7 +220,7 @@ public class CompareCallNo {
     }
 
     //处理书类号
-    private static int categoryBookN(CallNum callNum){
+    private static int parseCategoryBookN(CallNum callNum){
         int i=0;
         int categoryNum=0;
         String bookN=callNum.bookNumber;
@@ -238,9 +274,9 @@ public class CompareCallNo {
 
         //中文版本号直接排在书次号后面，如T2/B12-1二，在此处理中文版本号
         //warning 由于中文字符的问题，目前的处理方法可能存在一些问题，但是考虑实际使用影响不大
-        int versionnumber=sortrule.getChineseVersion(bookN.substring(bookN.length()-1,bookN.length()));
+        int versionnumber=sortrule.getChineseVersion(bookN.substring(bookN.length()-1));
         if (versionnumber!=-1){
-            int twobyteversion=sortrule.getChineseVersion(bookN.substring(bookN.length()-2,bookN.length()));
+            int twobyteversion=sortrule.getChineseVersion(bookN.substring(bookN.length()-2));
             if (twobyteversion!=-1){
                 callNum.setVersionNum_Chinese(twobyteversion);
             }
@@ -253,17 +289,21 @@ public class CompareCallNo {
     }
 
     //处理著者号
-    private static int authorBookN(CallNum callNum) {
-        int i = 0;
-        int versionnumber = 0;
+    private static int parseAuthorBookN(CallNum callNum) {
+        int i;
+        int versionnumber;
         //完整书次号
         String bookN=callNum.bookNumber;
 
         //前四位表示著者
-        String authorString=bookN.substring(0,4);
-
-        System.out.println(authorString);
-        //遍历查找点号，加入到著者号以方便比较大小s
+        String authorString;
+        if (bookN.length()>=4) {
+            authorString = bookN.substring(0, 4);
+        }
+        else{
+            authorString=bookN;
+        }
+        /* 遍历查找点号，加入到著者号以方便比较大小s */
         i = 4;
         for (;i<bookN.length();i+=1){
             char ch=bookN.charAt(i);
@@ -310,13 +350,124 @@ public class CompareCallNo {
         return versionnumber;
     }
 
+    //辅助号比较
+    private static int compareExtraN(){
+        parseExtraN(CallNumA);
+        parseExtraN(CallNumB);
 
-    private int compareExtraN(){
+        /*
+        总流程：
+        先比较卷册号，再比较年代号
+        */
+
+        if (CallNumA.getSectionNumMain()!=CallNumB.getSectionNumMain() ){
+            return CallNumA.getSectionNumMain()<=CallNumB.getSectionNumMain()?-1:1;
+        }
+
+        if (CallNumA.getSectionNumSub()!=CallNumB.getSectionNumSub()){
+            return CallNumA.getSectionNumSub()<=CallNumB.getSectionNumSub()?-1:1;
+        }
+
+        if (!CallNumA.getYearNum().equals(CallNumB.getYearNum())){
+            return CallNumA.getYearNum().compareTo(CallNumB.getYearNum());
+        }
 
         return 0;
     }
 
-//初始化函数
+    //解析单个辅助号
+    private static int parseExtraN(CallNum callNum){
+        String extraNumberString=callNum.extraNumber;
+
+        //辅助号分为卷册标识符（例 V.3）和年代号(例 2011 or 2011-2020)，空格分隔
+        String yearNumberS="";
+        String sectionIdS="";
+
+        extraNumberString.trim();
+        //查找卷册标识符V.
+        int sectionIdIndex=extraNumberString.indexOf("V.");
+
+        if (extraNumberString.indexOf("v.")!=-1){
+            sectionIdIndex=extraNumberString.indexOf("v.");
+        }
+
+        /*
+        分割部分
+        -比较粗略的检测策略：标识符不在第一位说明前面是年代号
+        */
+        if (sectionIdIndex==0){
+            //第一位是V
+            int spaceindex=extraNumberString.indexOf(" ");
+            if(spaceindex!=-1) {
+                //有空格，空格前是卷册，空格后是年代
+                yearNumberS = extraNumberString.substring(spaceindex);
+                sectionIdS = extraNumberString.substring(0, spaceindex);
+            }
+            else{
+                //无空格，只有卷册
+                sectionIdS = extraNumberString;
+            }
+        }
+        else if(sectionIdIndex==-1){
+            //没有卷册，都是年代
+            yearNumberS=extraNumberString;
+        }
+        else{
+            //V.前是年代，后是卷册
+            yearNumberS=extraNumberString.substring(0,sectionIdIndex);
+            sectionIdS=extraNumberString.substring(sectionIdIndex);
+        }
+
+        //处理卷册号，需要将字符串转为int才能正确比较
+        if (!sectionIdS.equals("")) {
+            sectionIdS.trim();
+            sectionIdS = sectionIdS.replaceAll("V.", "");
+            sectionIdS = sectionIdS.replaceAll("v.", "");
+            int dashIndex = sectionIdS.indexOf("/");
+            if (dashIndex == -1) {
+                //没有斜杠
+                try {
+                    int mainsectionId = Integer.parseInt(sectionIdS);
+                    callNum.setSectionNumMain(mainsectionId);
+                } catch (NumberFormatException e) {
+                    int mainSectionNum=sortrule.getSectionRomanNumber(sectionIdS);
+                    if (mainSectionNum==-1){
+                        //负一是没有记录的卷册号规则，所以认为这本书的次序很靠后
+                        mainSectionNum=100;
+                    }
+                    callNum.setSectionNumMain(mainSectionNum);
+                }
+            } else if (dashIndex + 1 < sectionIdS.length()) {
+                callNum.setSectionNumMain(Integer.parseInt(sectionIdS.substring(0, dashIndex)));
+                try {
+                    //将分割开的string卷册号转为int数字
+                    callNum.setSectionNumSub(Integer.parseInt(sectionIdS.substring(dashIndex + 1)));
+                } catch (NumberFormatException e) {
+                    //上面一句语句报错说明卷册号可能用的是大写字母
+                    int subSectionNum=sortrule.getSectionRomanNumber(sectionIdS.substring(dashIndex+1));
+                    if (subSectionNum==-1){
+                        //负一是没有记录的卷册号规则，所以认为这本书的次序很靠后
+                        subSectionNum=100;
+                    }
+                    callNum.setSectionNumSub(subSectionNum);
+                }
+            }
+        }
+        /*
+        处理年代号
+        warning: 目前认为都是四位数，可以直接比较字符串
+        */
+        callNum.setYearNum(yearNumberS);
+
+
+        return 0;
+    }
+
+    public static String getResultinfo() {
+        return resultinfo;
+    }
+
+    //构造函数，基本不作用
     public CompareCallNo(){
       //do nothing
     }
@@ -325,6 +476,10 @@ public class CompareCallNo {
         initCallNum(CallNoA,CallNoB);
     }
 
+
+    /**此java文件的main函数
+     * 用来单独测试相关代码的对错
+     * */
     public static void main(String[] args){
 
 
@@ -333,9 +488,9 @@ public class CompareCallNo {
         CallNum testnum=new CallNum("TB383 N186L RP.");
 
         ConfigureRule testrule=new ConfigureRule();
-        initCallNum("TP331/B1-2 dafd","TP331/B1-1 dadfa");
+        //parseExtraN(CallNumA);
 
-        testnum.PrintNum();
+        //testnum.PrintLanguage();
         /*System.out.println(testnum.Status());
         System.out.println(testnum.classNumber);
         System.out.println(testnum.bookNumber);
@@ -345,9 +500,9 @@ public class CompareCallNo {
 
 
 
-        categoryBookN(testnum);
-        System.out.println(bigClass(testnum));
-        System.out.println(Compare("TP331/B12-111十二 dafd","TP331/B12-111十四 dafd"));
+        //System.out.println(parseBigClass(testnum));
+        System.out.println(Compare("TK01#15","TK01-05 M718M V.2 2018"));
+        System.out.println(getResultinfo());
         //System.out.println(Compare("TB383 N186..n 2014","TB383 N186..n2 2010"));
         //System.out.println(Compare("O441.4#52","O441.4#6"));
 

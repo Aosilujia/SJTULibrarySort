@@ -30,7 +30,11 @@ public class CallNum {
     String extraNumber;
     //中文版本号
     private int versionNum_Chinese;
-
+    //卷次号
+    private int sectionNumMain;
+    private int sectionNumSub;
+    //年代号
+    private String yearNum;
     public CallNum(){
         System.out.println("Call Num need string");
     }
@@ -41,12 +45,11 @@ public class CallNum {
         //去除两端空格
         String S=inputS.trim();
 
-        //debug语句
-        //System.out.println("init class:CallNum(string)");
-        //语种判断，遍历查找语种分隔符
-        //##此处需要可配置更多语种
+        //System.out.println("init class:CallNum(string)");//debug
+        /**语种判断，遍历查找语种分隔符
+         *此处需要可配置更多语种*/
         int i=0;
-        for (i=0; i<S.length(); i++){
+        for (; i<S.length(); i++){
             char ch=S.charAt(i);
             if ('/'==ch){
                 language="chinese";
@@ -92,7 +95,6 @@ public class CallNum {
 
         //无空格，即无辅助号，存bookNumber
         if (i==S.length()){
-            System.out.println("no extra number");
             bookNumber=S.substring(bookNumberOffset);
             extraNumber="";
         }
@@ -166,13 +168,37 @@ public class CallNum {
     public int getVersionNum_Chinese() {
         return versionNum_Chinese;
     }
-    //功能型函数
 
+    public void setSectionNumMain(int sectionNumMain) {
+        this.sectionNumMain = sectionNumMain;
+    }
+
+    public int getSectionNumMain() {
+        return sectionNumMain;
+    }
+
+    public void setSectionNumSub(int sectionNumSub) {
+        this.sectionNumSub = sectionNumSub;
+    }
+
+    public int getSectionNumSub() {
+        return sectionNumSub;
+    }
+
+    public void setYearNum(String yearNum) {
+        this.yearNum = yearNum;
+    }
+
+    public String getYearNum() {
+        return yearNum;
+    }
+
+    //功能型函数
     public String Status(){
         return parseresult;
     }
 
-    public void PrintNum(){
+    public void PrintLanguage(){
         System.out.println(language);
     }
 

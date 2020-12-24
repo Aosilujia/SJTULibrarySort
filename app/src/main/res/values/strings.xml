@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">SjtuLibrarySort</string>
+    <string name="edit_message">...</string>
+    <string name="default_input_text">请输入</string>
+    <string name="input_text_callno1">请输入第一个索书号</string>
+    <string name="input_text_callno2">请输入第二个索书号</string>
+    <string name="button_compare">比较索书号</string>
+    <string name="button_send">Send</string>
+</resources>

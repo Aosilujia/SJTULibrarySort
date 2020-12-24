@@ -2,27 +2,38 @@ package com.sjtuserfid.sjtulibrarysort;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
 import com.sjtuserfid.callnum.CompareCallNo;
 
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
     private SensorActivity sensorActivity;
+    private Button comparebutton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        System.out.println("this is 0");
+        comparebutton= findViewById(R.id.button_compare);
+        comparebutton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                buttonCompare();
+            }
+            });
     }
 
 
-
-
-
-    public void buttonCompare(View view){
+    public void buttonCompare(){
 
         //读取两个索书号输入框数据
         String callno1= ((EditText)findViewById(R.id.editText)).getText().toString();
@@ -32,21 +43,25 @@ public class MainActivity extends AppCompatActivity {
 
         TextView resultview=findViewById(R.id.resultView);
 
-        //比较索书号
+        //判断数据空
         if (callno1==null || callno2==null){
             resultview.setText("输入不能为空");
             return;
         }
+
+        /**调用比较索书号的库*/
+        //初始化CompareCallNo 类
         CompareCallNo Compare=new CompareCallNo();
+        //调用Compare函数直接比较两个字符串
         int compareResult=Compare.Compare(callno1,callno2);
-        System.out.println("libsort result:"+compareResult);
+        System.out.println("libsort result:"+compareResult); //debug
         String resultContent;
         //根据比较结果输出
         if (compareResult==-1 || compareResult==0){
-            resultContent=callno1+'\n'+callno2;
+            resultContent="比较结果:\n"+callno1+'\n'+callno2;
         }
         else{
-            resultContent=callno2+'\n'+callno1;
+            resultContent="比较结果:\n"+callno2+'\n'+callno1;
         }
 
 
